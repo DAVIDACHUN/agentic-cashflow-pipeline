@@ -1,0 +1,149 @@
+{
+  "classification": {
+    "n_transactions": 6614,
+    "accuracy": 0.9535833081342606,
+    "macro_f1": 0.9353549809647602,
+    "queue_rate": 0.05624433020864832,
+    "auto_accepted_accuracy": 0.99967958987504,
+    "queued_model_accuracy": 0.18010752688172044,
+    "accuracy_after_hitl": 0.9996976111279104,
+    "per_class_f1": {
+      "card_revenue": 0.97,
+      "customer_payment": 0.629,
+      "insurance": 0.974,
+      "loan_repayment": 0.942,
+      "mca_remittance": 0.966,
+      "nsf_fee": 1.0,
+      "payroll": 0.962,
+      "rent": 0.974,
+      "supplier_payment": 0.938,
+      "tax_payment": 0.946,
+      "transfer": 0.951,
+      "utilities": 0.972
+    }
+  },
+  "signals": {
+    "balance_tampering": {
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "duplicate_deposit": {
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "mca_stacking": {
+      "tp": 8,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "nsf_cluster": {
+      "tp": 12,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "pass_through_funds": {
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "structuring": {
+      "tp": 3,
+      "fp": 4,
+      "fn": 0,
+      "precision": 0.42857142857142855,
+      "recall": 1.0
+    },
+    "_overall": {
+      "tp": 30,
+      "fp": 4,
+      "fn": 0,
+      "precision": 0.8823529411764706,
+      "recall": 1.0
+    }
+  },
+  "features": {
+    "avg_daily_balance": {
+      "median_abs_pct_err": 0.0,
+      "max_abs_pct_err": 0.0
+    },
+    "avg_monthly_revenue": {
+      "median_abs_pct_err": 0.0,
+      "max_abs_pct_err": 0.1577843858549334
+    },
+    "avg_monthly_opex": {
+      "median_abs_pct_err": 0.0,
+      "max_abs_pct_err": 0.029047464215138347
+    },
+    "revenue_volatility_weekly_cv": {
+      "median_abs_pct_err": 0.0,
+      "max_abs_pct_err": 2.8428927680798
+    },
+    "avg_monthly_debt_service": {
+      "median_abs_pct_err": 0.023437507463641906,
+      "max_abs_pct_err": 0.33333411650823047
+    },
+    "dscr_proxy": {
+      "median_abs_pct_err": 0.15599999999999992,
+      "max_abs_pct_err": 4.964285714285714
+    },
+    "nsf_count": {
+      "median_abs_pct_err": 0.0,
+      "max_abs_pct_err": 0.0
+    }
+  },
+  "recommendation": {
+    "accuracy": 0.9,
+    "confusion": {
+      "approve->approve": 13,
+      "approve->decline": 3,
+      "approve->refer": 1,
+      "decline->decline": 8,
+      "refer->refer": 15
+    },
+    "unsafe_approvals": 0,
+    "unsafe_approvals_with_any_human_touchpoint": 0
+  },
+  "judge": {
+    "judge": "heuristic-offline",
+    "n_memos": 40,
+    "judge_refusals": 0,
+    "pass_rate": 0.45,
+    "mean_grounded": 3.95,
+    "mean_risk_coverage": 5,
+    "negative_control_catch_rate": {
+      "wrong_recommendation": 1,
+      "inflated_metric": 1,
+      "dropped_risk": 1
+    }
+  },
+  "ops": {
+    "backend": "mock:rules-v1",
+    "statements": 40,
+    "status": {
+      "completed": 40
+    },
+    "mean_turns": 10.55,
+    "tool_errors": 0,
+    "mean_seconds_per_statement": 0.0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "approx_cost_usd_upper_bound": 0.0,
+    "review_items": {
+      "classification": 372,
+      "memo": 27,
+      "flag": 34
+    }
+  }
+}
