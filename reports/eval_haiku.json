@@ -1,0 +1,668 @@
+{
+  "classification": {
+    "n_transactions": 6614,
+    "accuracy": 0.9560024191109767,
+    "macro_f1": 0.9312765819031208,
+    "queue_rate": 0.07423646809797399,
+    "auto_accepted_accuracy": 0.9996733627306875,
+    "queued_model_accuracy": 0.41140529531568226,
+    "accuracy_after_hitl": 0.9996976111279104,
+    "per_class_f1": {
+      "card_revenue": 0.97,
+      "customer_payment": 0.622,
+      "insurance": 0.992,
+      "loan_repayment": 0.909,
+      "mca_remittance": 0.969,
+      "nsf_fee": 1.0,
+      "payroll": 0.962,
+      "rent": 0.996,
+      "supplier_payment": 0.96,
+      "tax_payment": 0.946,
+      "transfer": 0.877,
+      "utilities": 0.972
+    }
+  },
+  "signals": {
+    "balance_tampering": {
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "duplicate_deposit": {
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "mca_stacking": {
+      "tp": 8,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "nsf_cluster": {
+      "tp": 12,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "pass_through_funds": {
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    "structuring": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 2,
+      "precision": 1.0,
+      "recall": 0.3333333333333333
+    },
+    "_overall": {
+      "tp": 28,
+      "fp": 0,
+      "fn": 2,
+      "precision": 1.0,
+      "recall": 0.9333333333333333
+    }
+  },
+  "features": {
+    "avg_daily_balance": {
+      "median_abs_pct_err": 0.0,
+      "max_abs_pct_err": 0.0
+    },
+    "avg_monthly_revenue": {
+      "median_abs_pct_err": 0.0,
+      "max_abs_pct_err": 0.1577843858549334
+    },
+    "avg_monthly_opex": {
+      "median_abs_pct_err": 0.007728196523202208,
+      "max_abs_pct_err": 0.16891993299819238
+    },
+    "revenue_volatility_weekly_cv": {
+      "median_abs_pct_err": 0.0,
+      "max_abs_pct_err": 2.8428927680798
+    },
+    "avg_monthly_debt_service": {
+      "median_abs_pct_err": 0.0,
+      "max_abs_pct_err": 1.481659165214073
+    },
+    "dscr_proxy": {
+      "median_abs_pct_err": 0.1462068965517241,
+      "max_abs_pct_err": 29.047619047619044
+    },
+    "nsf_count": {
+      "median_abs_pct_err": 0.0,
+      "max_abs_pct_err": 0.0
+    }
+  },
+  "recommendation": {
+    "accuracy": 0.9,
+    "confusion": {
+      "approve->approve": 16,
+      "approve->refer": 1,
+      "decline->approve": 1,
+      "decline->decline": 5,
+      "decline->refer": 2,
+      "refer->refer": 15
+    },
+    "unsafe_approvals": 1,
+    "unsafe_approvals_with_any_human_touchpoint": 1
+  },
+  "judge": {
+    "judge": "claude:claude-sonnet-5-5",
+    "n_memos": 40,
+    "judge_refusals": 0,
+    "pass_rate": 0.275,
+    "mean_grounded": 2.975,
+    "mean_risk_coverage": 4.9,
+    "negative_control_catch_rate": {
+      "wrong_recommendation": 1,
+      "inflated_metric": 1,
+      "dropped_risk": 0.8947368421052632
+    },
+    "verdicts": {
+      "STMT-001": {
+        "grounded": 2,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "avg_monthly_revenue cited as 100045.07 vs fact 100422.90 (0.38% off, within tolerance) - not an issue",
+          "revenue_volatility_weekly_cv cited as 0.101 vs fact 0.095 (about 6% off, outside tolerance)",
+          "avg_monthly_opex cited as 72285.02 vs fact 73831.28 (about 2.1% off, outside tolerance)",
+          "transfer_share_of_credits cited as 0.0102 (1.02%) vs fact 0.0064 (about 59% off, outside tolerance)"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "Recommendation (approve) matches policy and the memo correctly reports no risk signals, so risk coverage is full. However, several cited metrics are outside the 2% tolerance: weekly revenue CV (0.101 vs 0.095), average monthly opex (72,285 vs 73,831), and transfer share of credits (1.02% vs 0.64%). Balances, min/avg daily balance, NSF count, negative days, and debt service match. Grounded score is reduced to 2, so the memo fails."
+      },
+      "STMT-002": {
+        "grounded": 3,
+        "risk_coverage": 5,
+        "recommendation_consistent": false,
+        "unsupported_claims": [
+          "DSCR proxy stated as 1.016, but the facts show 1.407 (well outside tolerance)",
+          "Claim that DSCR is below the 1.25 policy threshold contradicts the facts (1.407 is above 1.25)",
+          "Average monthly opex stated as ~69.3k (69,310.36), but the facts show 67,353.9 (about 2.9% off)",
+          "Claim that operating cash flow barely covers the SBA loan payment is not supported given DSCR of 1.407"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "The memo misstates the DSCR proxy (1.016 vs 1.407) and overstates opex (69.3k vs 67.4k, outside the 2% tolerance). It then uses the wrong DSCR to justify a refer recommendation. The facts show no risk signals and a DSCR above 1.25, so the policy recommendation is approve. The memo's recommendation is therefore inconsistent. No ground-truth risk signals exist, so risk coverage is full."
+      },
+      "STMT-003": {
+        "grounded": 3,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "DSCR proxy of 7.328 differs from the fact value of 7.205 (about 1.7% off, within tolerance, but see transfer share)",
+          "transfer_share_of_credits cited as 0.0031 (about 0.3%) vs fact 0.0066, outside tolerance",
+          "avg_monthly_revenue cited as 182,478.87 vs fact 181,836.66 (0.35% off, within tolerance)"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "The recommendation (approve) matches policy and no ground-truth risk signals exist, so coverage is full. However, the transfer share of credits is cited as 0.0031 against the fact 0.0066, well outside 2% tolerance. DSCR (7.328 vs 7.205, 1.7%) and avg monthly revenue (0.35%) are within tolerance. The memo also has malformed formatting, with a stray parameter tag embedded in the summary. Grounded is reduced to 3 for the transfer share error, so the memo fails the grounded >= 4 threshold."
+      },
+      "STMT-004": {
+        "grounded": 3,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "DSCR proxy stated as 6.259, but the facts show 5.142 (about 22% off)",
+          "Average monthly opex stated as about $78.5k (78,533.03), but the facts show 83,664.86 (about 6% off)"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "The recommendation (approve) matches policy, and the memo correctly reports no confirmed risk signals, so risk coverage is full. Two figures fall outside the 2% tolerance: the DSCR proxy (6.259 vs 5.142) and average monthly opex (78,533.03 vs 83,664.86). Both are cited in the summary and in cited_metrics. This drops grounded below 4, so the memo fails. The other metrics match the facts."
+      },
+      "STMT-005": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "All checkable metrics (opening/closing balance, 128 transactions, DSCR 3.288, avg daily balance, CV, NSF, MCA, negative days) match the facts. There are no ground-truth risk signals, and the memo asserts none as confirmed; the qualitative watch items are framed as spot-check items that do not change the outcome. The approve recommendation matches the policy recommendation."
+      },
+      "STMT-006": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "All checkable figures match the facts: opening balance 89,110.81, closing about 124,589, DSCR 3.276 vs the 1.25 threshold, and zero NSF, negative-balance days, MCA debits and transfer share. The memo correctly reports that no risk signals were confirmed, and its recommendation of approve matches the policy recommendation. Its extra caveats (low-confidence classifications, the duplicate-looking debit, payee labels) are descriptive transaction-level details that the facts neither confirm nor contradict, and the memo does not assert any confirmed signal."
+      },
+      "STMT-007": {
+        "grounded": 2,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "dscr_proxy 5.007 vs fact 4.783 (4.7% off)",
+          "transfer_share_of_credits 0.0099 (~1%) vs fact 0.0039 (150% off)",
+          "avg_monthly_opex 92956.98 vs fact 95095.52 (2.2% off)",
+          "revenue_volatility_weekly_cv 0.0977 vs fact 0.1075 (9% off)"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "Recommendation (approve) matches policy and no risk signals are asserted, so coverage is full. However, several cited metrics fall outside the 2% tolerance: DSCR proxy, transfer share, monthly opex, and weekly revenue CV. Avg monthly revenue (124059.92 vs 124810.58, 0.6%) is within tolerance. Grounding is too weak to pass."
+      },
+      "STMT-008": {
+        "grounded": 3,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "avg_monthly_opex stated as $92,626.39 but facts show $93,023.43 (about 0.4% off, within tolerance, so not an error)",
+          "dscr_proxy stated as 0.344 but facts show 0.28 (about 23% off, outside tolerance)"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "The recommendation (refer) matches policy and the nsf_cluster signal is clearly covered. Most metrics match the facts: avg daily balance, min balance, 15 negative days, 8 NSFs, revenue, CV, debt service. The opex of 92,626.39 is within 2% of 93,023.43. However, the DSCR proxy is reported as 0.344 versus the true 0.28, well outside tolerance, and it is cited repeatedly. This lowers grounding to 3, so the memo does not pass."
+      },
+      "STMT-009": {
+        "grounded": 2,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "DSCR proxy of 0.26 (facts: 0.028) is far outside tolerance",
+          "Average monthly revenue 81,318.10 (facts: 80,619.64) is outside 2% tolerance",
+          "Weekly revenue volatility CV 0.1386 (facts: 0.1433) is outside 2% tolerance",
+          "Transfer share of credits 0.0264 (facts: 0.0347) is outside tolerance"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "The recommendation (refer) matches policy and there are no ground-truth risk signals, so risk coverage is fine. However, several metrics are outside the 2% tolerance: the DSCR proxy (0.26 vs 0.028), avg monthly revenue (81,318.10 vs 80,619.64), weekly CV (0.1386 vs 0.1433), and transfer share (0.0264 vs 0.0347). Grounding is therefore too low to pass."
+      },
+      "STMT-010": {
+        "grounded": 4,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "DSCR proxy stated as 4.795 vs fact 4.925 (about 2.6% off, outside 2% tolerance)",
+          "avg_monthly_opex stated as 61,928.77 vs fact 61,749.43 (within 0.3%, supported)"
+        ],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "Nearly all metrics match the facts within tolerance. The DSCR proxy (4.795 vs 4.925) is about 2.6% off, one number out of tolerance, so grounded is 4. Opex is within tolerance. There are no ground-truth risk signals, and the memo correctly asserts none and does not invent serious ones. The approve recommendation matches policy."
+      },
+      "STMT-011": {
+        "grounded": 2,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "DSCR proxy stated as 0.399 but facts show 0.599",
+          "avg_monthly_opex stated as 53,258.56 but facts show 52,372.44",
+          "avg_monthly_debt_service stated as 1,772.24 but facts show 2,658.36"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "The recommendation (refer) matches policy and the memo correctly notes no confirmed risk signals; the DSCR below 1.25 trigger is captured. However, three metrics are outside the 2% tolerance: DSCR proxy (0.399 vs 0.599), avg monthly opex (53,258.56 vs 52,372.44), and avg monthly debt service (1,772.24 vs 2,658.36). This lowers grounding below the pass threshold."
+      },
+      "STMT-012": {
+        "grounded": 2,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "avg_monthly_opex stated as 57,559.23; facts show 59,536.27 (about 3.3% off)",
+          "dscr_proxy stated as -1.808; facts show -4.691",
+          "avg_monthly_debt_service stated as 3,902.21 (about 3,902/month); facts show 1,925.17",
+          "mca_debit_count cited as 1; facts show 0",
+          "Memo describes an MCA-type debit as part of debt service and a possible MCA debit (ACH DEBIT WEB PMT classified as mca_remittance), but facts show no MCA debits"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "The recommendation (refer) matches policy and the nsf_cluster signal is clearly covered, so risk coverage is full. However, several metrics fall outside tolerance: opex, DSCR proxy, debt service, and MCA debit count. The memo also implies MCA activity that the facts do not support. Grounded score is therefore low and the memo fails."
+      },
+      "STMT-013": {
+        "grounded": 2,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "Debt-service coverage proxy of 0.589 contradicts the fact of -0.021",
+          "Average monthly opex of $42,029.19 contradicts the fact of $50,571.77",
+          "Average monthly debt service of $14,308.13 contradicts the fact of $5,765.55",
+          "Claim that duplicate insurance premiums or a duplicate rent payment are possible suggests duplicate-deposit-like concerns, which the facts do not support"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "The recommendation (refer) matches policy, and both ground-truth signals (mca_stacking, nsf_cluster) are covered. However, three key metrics are outside tolerance: DSCR proxy (0.589 vs -0.021), opex ($42,029 vs $50,572), and debt service ($14,308 vs $5,766). The grounding score is therefore below 4 and the memo fails."
+      },
+      "STMT-014": {
+        "grounded": 2,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "avg_monthly_opex of 59,076.02 differs from the fact of 58,807.72 (about 0.46%, within tolerance), so it is not counted",
+          "avg_monthly_debt_service of 8,652.88 vs 8,921.18 is a 3.0% deviation, outside tolerance",
+          "dscr_proxy of -0.289 vs -0.25 is outside tolerance",
+          "mca_debit_count of 125 vs 130 is a 3.8% deviation, outside tolerance"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "The recommendation (refer) matches policy, and both ground-truth signals (mca_stacking, nsf_cluster) are clearly covered, so risk coverage is 5. Grounding is weak: debt service (8,652.88 vs 8,921.18), DSCR proxy (-0.289 vs -0.25) and MCA debit count (125 vs 130) are outside the 2% tolerance. Opex (59,076.02 vs 58,807.72) is within tolerance. Because of the three out-of-tolerance numbers, grounded is below 4 and the memo fails."
+      },
+      "STMT-015": {
+        "grounded": 3,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "avg_monthly_debt_service stated as 6,673.50; facts show 7,103.71 (about 6% off)",
+          "mca_debit_count stated as 117; facts show 128 (about 9% off)",
+          "DSCR proxy stated as -0.067; facts show -0.063 (about 6% off)"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "The recommendation (refer) matches policy, and both ground-truth signals (mca_stacking, nsf_cluster) are covered, as are the negative-balance days. However, three figures fall outside the 2% tolerance: debt service (6,673.50 vs 7,103.71), MCA debit count (117 vs 128), and DSCR proxy (-0.067 vs -0.063). These drop grounding to 3, so the memo fails."
+      },
+      "STMT-016": {
+        "grounded": 2,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "avg_monthly_opex $91,180.94 vs fact $90,786.32 (~0.4% diff, within tolerance)",
+          "avg_monthly_debt_service $10,346.85 vs fact $10,741.47 (3.7% off, outside tolerance)",
+          "dscr_proxy -0.912 vs fact -0.842 (~8% off, outside tolerance)",
+          "mca_debit_count 116 vs fact 130 (10.8% off, outside tolerance)"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "The recommendation (refer) matches policy, and both ground-truth signals (mca_stacking, nsf_cluster) are covered. However, three metrics are outside the 2% tolerance: debt service ($10,346.85 vs $10,741.47), DSCR proxy (-0.912 vs -0.842), and MCA debit count (116 vs 130). Opex is within tolerance. The grounded score is therefore below 4, so the memo fails."
+      },
+      "STMT-017": {
+        "grounded": 4,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "avg_monthly_opex cited as 121,160.6 but facts show 127,571.16 (about 5% off)"
+        ],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "The memo recommends decline, which matches the policy. It covers both ground-truth signals (structuring and nsf_cluster). Nearly all metrics match the facts: avg daily balance, min balance, days negative, NSF count, revenue, CV, debt service, MCA count, transfer share, opening and closing balances. The one exception is avg_monthly_opex (121,160.6 vs 127,571.16), which is outside the 2% tolerance, so grounded is 4. The structuring deposit details cannot be checked against the facts and are ignored."
+      },
+      "STMT-018": {
+        "grounded": 3,
+        "risk_coverage": 5,
+        "recommendation_consistent": false,
+        "unsupported_claims": [
+          "DSCR proxy stated as 4.713 but facts show 3.991",
+          "avg_monthly_opex stated as 112,071.29 (and 'about $112K') but facts show 117,712.07",
+          "Duplicate deposits described as unconfirmed/medium severity when the facts treat duplicate_deposit as a risk signal, which means decline under policy",
+          "Claim that 'otherwise the file meets thresholds' and a referral is needed to verify, contradicting the policy decline"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "The memo identifies the duplicate deposit signal, so risk coverage is full. However, it recommends refer while policy requires decline because duplicate_deposit is a fraud signal. Two metrics (DSCR proxy 4.713 vs 3.991, opex 112,071 vs 117,712) fall outside the 2% tolerance, which lowers grounding. Recommendation is inconsistent, so it fails."
+      },
+      "STMT-019": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "All cited metrics (avg daily balance 23,316.71, min daily balance 544.03, 0 negative days, 0 NSF, monthly revenue 87,384.47, opex 78,966.86, weekly CV 0.6303, 0 MCA debits, transfer share 0.0146) match the facts. The memo flags balance_tampering, the only ground-truth risk signal, and recommends decline, which matches the policy recommendation. Transaction-level details such as the 9,147.89 gap cannot be checked against the facts and do not contradict them."
+      },
+      "STMT-020": {
+        "grounded": 4,
+        "risk_coverage": 3,
+        "recommendation_consistent": false,
+        "unsupported_claims": [
+          "States there are no confirmed fraud or risk signals, but the facts show structuring as a risk signal.",
+          "States the structuring candidate C1 was not confirmed and that the cash deposits do not show a structuring pattern, which contradicts the facts."
+        ],
+        "missing_risks": [
+          "structuring (the memo mentions the sub-$10k cash deposits but explicitly says they are not confirmed as structuring)"
+        ],
+        "passed": false,
+        "rationale": "All cited metrics match the facts. However, the memo dismisses the structuring signal as unconfirmed and recommends approve, while the policy recommendation is decline because structuring is a fraud signal. The memo does flag the deposits just under $10k, so partial coverage is credited, but it does not treat structuring as present. The recommendation is inconsistent with policy."
+      },
+      "STMT-021": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "All cited metrics (avg daily balance, min daily balance, days negative, NSF count, revenue, opex, debt service, weekly CV, MCA debit count, transfer share) match the facts exactly. The facts list no risk signals, and the memo correctly files no flags; it explicitly dismisses the structuring candidate as a false positive rather than asserting it. The recommendation of approve matches the policy recommendation. Details about specific transactions and the ~$34k gross value cannot be checked against the facts and do not contradict them."
+      },
+      "STMT-022": {
+        "grounded": 2,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "dscr_proxy 1.853 contradicts the fact of 2.604",
+          "avg_monthly_opex 107,978 contradicts the fact of 114,283.45",
+          "avg_monthly_debt_service cited as 13,458.65 contradicts the fact of 7,153.19",
+          "mca_debit_count cited as 1 contradicts the fact of 0"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "The recommendation (approve) matches policy, and the memo correctly reports that no risk signals exist, so risk coverage is full. However, four cited metrics fall outside the 2% tolerance: DSCR proxy, average monthly opex, average monthly debt service, and MCA debit count. These errors lower grounding below 4, so the memo fails."
+      },
+      "STMT-023": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "All cited metrics, balances, transaction count, period and policy thresholds match the facts. The memo correctly reports no confirmed risk signals, explicitly rejects the structuring candidate, and recommends approve, which matches the policy recommendation. The remaining claims (Shopify concentration, descriptor ambiguity, balance trend) are descriptive and do not contradict the facts."
+      },
+      "STMT-024": {
+        "grounded": 4,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "DSCR proxy stated as 6.961 vs fact 6.864 (about 1.4% off, within tolerance, so not a violation)",
+          "avg_monthly_opex 50473.91 vs fact 50663.28 (about 0.37% off, within tolerance)"
+        ],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "All cited metrics are within 2% of the ground truth (DSCR 6.961 vs 6.864 is ~1.4% off; opex 50473.91 vs 50663.28 is ~0.4% off). The facts list no risk signals and the memo asserts none as confirmed. It correctly reports zero NSF, zero MCA debits, and zero negative days. The recommendation of approve matches the policy recommendation. The additional qualitative risks are soft observations, not claimed signals."
+      },
+      "STMT-025": {
+        "grounded": 2,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "avg_monthly_opex cited as 108,648.01 (about $108.6K) but facts show 115,045.37",
+          "avg_monthly_debt_service cited as 6,397.36 but facts show 0.0",
+          "dscr_proxy cited as 4.913 and compared to the 1.25 threshold, but facts show dscr_proxy is null (no debt service)",
+          "mca_debit_count cited as 1 but facts show 0",
+          "Memo suggests a possible MCA remittance and tentatively tags a $19,192.09 debit as mca_remittance, contradicting facts showing no MCA debits or risk signals"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "The recommendation (approve) matches policy and there are no ground-truth risk signals, so risk coverage is full. However, several cited metrics contradict the facts: opex, debt service, DSCR proxy, and MCA debit count. The memo also raises a speculative MCA concern that the facts do not support. Grounding is therefore too low to pass."
+      },
+      "STMT-026": {
+        "grounded": 3,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "transfer_share_of_credits cited as 0.0157, but facts show 0.0202 (outside 2% tolerance)"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "The recommendation (approve) matches the policy, and the memo correctly asserts no confirmed risk signals; the structuring candidate was explicitly not confirmed. Most metrics match (avg daily balance, min balance, opex, zero counts). Two cited metrics are off: transfer_share_of_credits is 0.0157 vs 0.0202 in the facts (about 22% off), and avg_monthly_revenue is 171969.51 vs 171168.12 (about 0.47% off, within tolerance). Because of the transfer share error, grounded is 3, which fails the grounded >= 4 threshold, so the memo does not pass."
+      },
+      "STMT-027": {
+        "grounded": 2,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "avg_monthly_opex of 99,748.41 contradicts the fact value of 107,013.50 (about 6.8% off)",
+          "avg_monthly_debt_service of 7,265.09 contradicts the fact value of 0.0",
+          "dscr_proxy of 10.256 contradicts the fact that dscr_proxy is null (no debt service)",
+          "mca_debit_count of 2 contradicts the fact value of 0",
+          "Claim that two ACH debits are tentatively MCA remittances and that MCA stacking exposure is possible is not supported; facts show no MCA debits and no risk signals",
+          "Memo describes the balance as growing from 63,952.75 to a low of 59,259.07, which is garbled; the minimum daily balance is a fact, but presenting it as a growth path is misleading"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "The recommendation (approve) matches policy and there are no ground-truth risk signals, so risk coverage is full. However, several metrics contradict the facts: opex is off by about 7%, debt service is 7,265.09 instead of 0, the DSCR proxy is 10.256 instead of null, and the MCA debit count is 2 instead of 0. Grounding is therefore poor, and the memo fails."
+      },
+      "STMT-028": {
+        "grounded": 1,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "Closing balance stated as 48,365.78; facts show 46,281.59",
+          "DSCR proxy 10.876 stated; facts show dscr_proxy null (no debt service)",
+          "avg_monthly_debt_service 1,010.25 / 'about 1,010/month' stated; facts show 0.0",
+          "avg_monthly_opex 41,448.63 stated; facts show 42,458.88 (outside 2% tolerance)",
+          "Claim that reported monthly debt service exists and needs verification contradicts facts showing no debt service"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "The memo correctly recommends approve and correctly asserts no risk signals, but it contains several figures that contradict the facts: closing balance, a fabricated DSCR proxy, nonexistent monthly debt service, and a mismatched opex figure. Grounding is therefore very poor, so the memo fails despite consistent recommendation and full risk coverage (there are no ground-truth signals)."
+      },
+      "STMT-029": {
+        "grounded": 2,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "DSCR proxy stated as -2.602; facts show -2.832 (about 8% off)",
+          "Average monthly revenue stated as 96,859.24 (and about 96.9k); facts show 95,881.75 (about 1.0% off, within tolerance, but the DSCR error is not)",
+          "Revenue volatility weekly CV stated as 0.8473; facts show 0.8344 (about 1.5% off, within tolerance)",
+          "Transfer share of credits stated as 0.0174; facts show 0.0274 (about 36% off)"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "The recommendation (refer) matches policy and the NSF cluster is covered. Two cited numbers fall outside the 2% tolerance: DSCR proxy (-2.602 vs -2.832) and transfer share of credits (0.0174 vs 0.0274). Revenue (about 1% off) and CV (about 1.5% off) are within tolerance. Other metrics match. Two out-of-tolerance numbers lower grounding to 2, so the memo fails despite full risk coverage."
+      },
+      "STMT-030": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "All cited metrics (DSCR 1.094, min balance 1000.54, avg monthly revenue and opex, 131 transactions, period dates, zero negative days, zero NSF) match the facts. The memo correctly states that no fraud or risk signals were confirmed, which is consistent with the empty risk_signals list. Its recommendation of refer matches the policy recommendation, which is triggered by a DSCR proxy below 1.25. Transaction-level details and the date of the low balance cannot be checked against the facts and do not contradict them."
+      },
+      "STMT-031": {
+        "grounded": 2,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "DSCR proxy of 0.633 is stated, but the facts give 0.756 (outside 2% tolerance)",
+          "Average monthly debt service of $2,837.45 is stated, but the facts give $4,256.18",
+          "Average monthly opex of $122,648.56 is stated, but the facts give $121,229.83 (about 1.2% off, within tolerance, so not counted against the memo)"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "The recommendation (refer) matches the policy. Ground-truth risk signals are empty and the memo asserts no confirmed signals, so risk coverage is full. However, the memo misstates two key figures: DSCR proxy (0.633 vs 0.756) and monthly debt service (2,837.45 vs 4,256.18). Both are well outside the 2% tolerance, so grounding is low and the memo fails. The opex figure is within tolerance. Other metrics match."
+      },
+      "STMT-032": {
+        "grounded": 2,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "dscr_proxy 1.719 contradicts the facts (2.517)",
+          "transfer_share_of_credits 0.0449 (4.5% of credits) contradicts the facts (0.0157)",
+          "avg_monthly_revenue 123091.13 is outside tolerance of the facts (126861.47)",
+          "revenue_volatility_weekly_cv 0.2179 contradicts the facts (0.1959)"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "The recommendation (approve) matches the policy, and the memo correctly reports no risk signals, which is consistent with the facts. However, four numbers fall outside the 2% tolerance: DSCR proxy, transfer share, average monthly revenue and weekly revenue CV. Grounding is therefore low, so the memo does not pass."
+      },
+      "STMT-033": {
+        "grounded": 1,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "DSCR proxy 0.376 vs fact -0.491",
+          "MCA debit count 118 vs fact 130",
+          "avg_monthly_revenue 100,970.11 vs fact 87,209.77",
+          "avg_monthly_opex 95,669.67 vs fact 94,638.67 (about 1.1% off, within tolerance) but memo says 95,670 opex is exceeded by revenue framing inconsistent; main issue is revenue",
+          "avg_monthly_debt_service 14,114.44 vs fact 15,145.44",
+          "revenue_volatility_weekly_cv 0.4623 vs fact 0.1203",
+          "transfer_share_of_credits 0.0105 vs fact 0.1454",
+          "Memo states revenue is steady, contradicting the CV of 0.12 vs its cited 0.46 and describes opex/debt service exceeding revenue using inconsistent figures"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "Recommendation (refer) and all three risk signals (mca_stacking, nsf_cluster, pass_through_funds) match the facts. However, many numeric values are outside the 2% tolerance: DSCR, MCA debit count, revenue, debt service, weekly CV and transfer share. Grounding is poor, so the memo fails."
+      },
+      "STMT-034": {
+        "grounded": 1,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "avg_monthly_revenue 100,554.50 (roughly $100k/month) vs fact 87,945.28",
+          "revenue_volatility_weekly_cv 0.4877 vs fact 0.2219",
+          "avg_monthly_opex 77,477.65 vs fact 84,515.31",
+          "avg_monthly_debt_service 17,505.08 vs fact 10,467.41",
+          "dscr_proxy 1.318 vs fact 0.328; memo claims it clears the 1.25 threshold, but the fact shows it is far below",
+          "mca_debit_count 125 vs fact 128",
+          "transfer_share_of_credits 0.011 vs fact 0.135"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "The recommendation (refer) matches policy, and all three risk signals (MCA stacking, NSF cluster, pass-through funds) plus the negative-balance days are covered. Balance metrics, days negative (73) and NSF count (56) are accurate. However, many cited metrics are outside tolerance: revenue, CV, opex, debt service, DSCR proxy (1.318 vs 0.328), MCA debit count and transfer share. The memo wrongly states DSCR clears the 1.25 threshold when the true proxy of 0.328 is far below it. Grounding is therefore poor and the memo fails."
+      },
+      "STMT-035": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "All cited metrics (avg daily balance, min balance, 81 negative days, 58 NSF, revenue, opex, debt service, DSCR 0.18, 128 MCA debits, 3.7% transfer share) match the facts. Both ground-truth signals (mca_stacking, nsf_cluster) are clearly covered. The memo states no fraud signal was confirmed, which is consistent with the facts, and its 'refer' recommendation matches policy. Details such as the funder names, the fixed 205.98 debit amount, and the low-confidence payments cannot be checked against these facts and do not contradict them."
+      },
+      "STMT-036": {
+        "grounded": 2,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "avg_monthly_debt_service of 5,999.09 (about 5,999/month) vs fact 6,402.45 (about 6.3% off)",
+          "dscr_proxy 0.28 vs fact 0.325 (about 14% off)",
+          "mca_debit_count 116 vs fact 128 (about 9% off)",
+          "avg_monthly_opex 35,042.67 (about 35,043/month) vs fact 34,639.31 (about 1.2% off, within tolerance but listed for completeness is not required)"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "The recommendation (refer) matches policy and both ground-truth risk signals (mca_stacking, nsf_cluster) are covered. However, several figures fall outside the 2% tolerance: debt service (5,999 vs 6,402), DSCR proxy (0.28 vs 0.325), and MCA debit count (116 vs 128). Balances, NSF count, days negative, revenue, CV and transfer share all match. Grounded is therefore below 4, so the memo fails."
+      },
+      "STMT-037": {
+        "grounded": 3,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "avg_monthly_opex cited as 52,109.82 but facts show 53,643.47 (about 2.9% off, outside 2% tolerance)",
+          "dscr_proxy cited as 3.324 but facts show 2.9 (about 14.6% off)"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "The memo correctly identifies balance_tampering and recommends decline, matching the policy. Most cited metrics match the facts, but avg_monthly_opex (52,109.82 vs 53,643.47) and dscr_proxy (3.324 vs 2.9) are outside the 2% tolerance, so grounded is 3 and the memo does not pass."
+      },
+      "STMT-038": {
+        "grounded": 3,
+        "risk_coverage": 3,
+        "recommendation_consistent": false,
+        "unsupported_claims": [
+          "avg_monthly_opex stated as $64,800.52 but facts show $64,058.84 (about 1.2% off, within tolerance, so not counted against grounding)",
+          "Structuring described as not confirmed/ambiguous, whereas the facts list structuring as a confirmed risk signal",
+          "Recommendation of 'refer' contradicts the policy recommendation of 'decline'"
+        ],
+        "missing_risks": [
+          "structuring not treated as a confirmed fraud signal (mentioned only as an unconfirmed candidate)"
+        ],
+        "passed": false,
+        "rationale": "The memo's metrics match the facts within tolerance (opex $64,800.52 vs $64,058.84 is about 1.2% off). However, it treats structuring as an unconfirmed candidate, while the facts list it as a risk signal and the policy says to decline on structuring. It therefore recommends 'refer' instead of 'decline'. It mentions structuring but downplays it, so risk coverage is incomplete, and the recommendation is inconsistent with policy."
+      },
+      "STMT-039": {
+        "grounded": 3,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "DSCR proxy stated as 7.549 (cited in summary and cited_metrics) but the facts give 5.358, well outside the 2% tolerance"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "The memo correctly recommends decline and identifies the duplicate_deposit signal, so risk coverage and recommendation consistency are satisfied. Its other metrics match the facts: avg_daily_balance 53704.92, avg_monthly_revenue 133663.35, avg_monthly_debt_service 4747.92, days_negative_balance 0, nsf_count 0, mca_debit_count 0, transfer_share 0. The DSCR proxy of 7.549 contradicts the ground truth of 5.358, and it is repeated in the summary and the cited metrics, which lowers grounding to 3. Because grounded is below 4, the memo fails."
+      },
+      "STMT-040": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "All cited metrics (DSCR 4.239, 0 negative days, 0 NSF, revenue 144,854.06, ADB 57,825.52, debt service 4,998.23, transfer share 0.0062) match the facts. The memo identifies balance_tampering, the only ground-truth signal, and recommends decline, which matches the policy recommendation. It dismisses the structuring candidate, so it does not assert a signal the facts do not show. Transaction-level details cannot be checked against the facts and are ignored."
+      }
+    }
+  },
+  "ops": {
+    "backend": "claude:claude-haiku-5-5",
+    "statements": 40,
+    "status": {
+      "completed": 40
+    },
+    "mean_turns": 6.55,
+    "tool_errors": 0,
+    "mean_seconds_per_statement": 32.74225,
+    "input_tokens": 4092614,
+    "output_tokens": 364956,
+    "approx_cost_usd_upper_bound": 0.5917,
+    "review_items": {
+      "classification": 491,
+      "memo": 27,
+      "flag": 34
+    },
+    "judge_usage": {
+      "input_tokens": 354391,
+      "output_tokens": 48760,
+      "calls": 139
+    },
+    "judge_cost_usd_upper_bound": 1.1964
+  }
+}

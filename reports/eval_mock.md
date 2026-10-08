@@ -14,6 +14,8 @@
 | Judge pass rate | 45.0% |
 | Mean turns / statement | 10.6 |
 | Tool-call errors | 0 |
+| Agent tokens in / out | 0 / 0 |
+| Agent cost (USD, list price, cache reads billed as full input) | 0.00 |
 
 | Signal | TP | FP | FN | Precision | Recall |
 |---|---|---|---|---|---|

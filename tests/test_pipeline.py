@@ -109,3 +109,17 @@ def test_heuristic_judge_fails_negative_controls(golden):
     judge = HeuristicJudge()
     for kind, bad in corrupt(res.state.memo, item["golden"]).items():
         assert not judge.judge(bad, item["golden"]).passed, kind
+
+
+def test_dismissed_fraud_candidate_forces_human_review(golden, tmp_path):
+    item = next(i for i in golden if any(s["type"] == "structuring" for s in i["golden"]["signals"]))
+    stmt = item["statement"]
+    labels = item["golden"]["labels"]
+    rec = {"statement_id": stmt["statement_id"], "status": "completed",
+           "classifications": {k: {"category": v, "confidence": 0.99} for k, v in labels.items()},
+           "flags": [],  # agent dismissed everything
+           "memo": {"recommendation": "approve", "summary": "", "key_risks": [], "cited_metrics": []},
+           "candidates": detectors.run_all(stmt, labels)}
+    con = review_queue.connect(str(tmp_path / "q.db"))
+    counts = review_queue.route_record(con, rec, stmt)
+    assert counts["flag"] >= 1 and counts["memo"] == 1

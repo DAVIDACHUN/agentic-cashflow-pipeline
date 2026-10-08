@@ -32,6 +32,12 @@ def evaluate(golden_dir: Path, run_dir: Path, judge) -> dict:
     goldens = {p.stem: json.loads(p.read_text()) for p in sorted((golden_dir / "labels").glob("*.json"))}
     results = {p.stem: json.loads(p.read_text()) for p in sorted((run_dir / "results").glob("*.json"))}
     ids = [s for s in goldens if s in results]
+    for s in ids:  # statement-level facts for the judge
+        st = json.loads((golden_dir / "statements" / f"{s}.json").read_text())
+        goldens[s]["overview"] = {
+            "business_name": st["business_name"], "period_start": st["period_start"], "period_end": st["period_end"],
+            "n_transactions": len(st["transactions"]), "opening_balance": st["opening_balance"],
+            "closing_balance": st["transactions"][-1]["running_balance"]}
 
     # ---- classification
     y, yhat, auto_ok, auto_n, q_ok, q_n = [], [], 0, 0, 0, 0
@@ -99,13 +105,14 @@ def evaluate(golden_dir: Path, run_dir: Path, judge) -> dict:
            "unsafe_approvals_with_any_human_touchpoint": unsafe_caught}
 
     # ---- judge on real memos + negative controls
-    verdicts, controls = [], defaultdict(list)
+    verdicts, controls, per_memo = [], defaultdict(list), {}
     for s in ids:
         memo = results[s]["memo"]
         if not memo:
             continue
         v = judge.judge(memo, goldens[s])
         verdicts.append(v)
+        per_memo[s] = v.model_dump() if v is not None else {"refused": True}
         for kind, bad in corrupt(memo, goldens[s]).items():
             cv = judge.judge(bad, goldens[s])
             controls[kind].append(cv is not None and not cv.passed)
@@ -114,7 +121,8 @@ def evaluate(golden_dir: Path, run_dir: Path, judge) -> dict:
            "pass_rate": mean(v.passed for v in ok) if ok else None,
            "mean_grounded": mean(v.grounded for v in ok) if ok else None,
            "mean_risk_coverage": mean(v.risk_coverage for v in ok) if ok else None,
-           "negative_control_catch_rate": {k: mean(v) for k, v in controls.items()}}
+           "negative_control_catch_rate": {k: mean(v) for k, v in controls.items()},
+           "verdicts": per_memo}
 
     # ---- ops
     rs = [results[s] for s in ids]
@@ -130,6 +138,12 @@ def evaluate(golden_dir: Path, run_dir: Path, judge) -> dict:
            "input_tokens": tok_in, "output_tokens": tok_out,
            "approx_cost_usd_upper_bound": round(tok_in / 1e6 * pin + tok_out / 1e6 * pout, 4),
            "review_items": dict(sum((Counter(r["queued"]) for r in rs), Counter()))}
+
+    ju = getattr(judge, "usage", None)
+    if ju:
+        jin, jout = PRICES.get(judge.name.split(":")[-1], (0, 0))
+        ops["judge_usage"] = ju
+        ops["judge_cost_usd_upper_bound"] = round(ju["input_tokens"] / 1e6 * jin + ju["output_tokens"] / 1e6 * jout, 4)
 
     return {"classification": cls, "signals": sig, "features": feats, "recommendation": rec,
             "judge": jud, "ops": ops}
@@ -153,6 +167,10 @@ def to_markdown(r: dict) -> str:
          f"| Judge pass rate | {pct(j['pass_rate'])} |",
          f"| Mean turns / statement | {o['mean_turns']:.1f} |",
          f"| Tool-call errors | {o['tool_errors']} |",
+         f"| Agent tokens in / out | {o['input_tokens']:,} / {o['output_tokens']:,} |",
+         f"| Agent cost (USD, list price, cache reads billed as full input) | {o['approx_cost_usd_upper_bound']:.2f} |",
+         *([f"| Judge calls / cost (USD, upper bound) | {o['judge_usage']['calls']} / {o['judge_cost_usd_upper_bound']:.2f} |"]
+           if "judge_usage" in o else []),
          "", "| Signal | TP | FP | FN | Precision | Recall |", "|---|---|---|---|---|---|"]
     for t in ALL_SIGNALS:
         x = s[t]

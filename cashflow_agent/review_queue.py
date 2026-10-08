@@ -3,8 +3,9 @@
 Routing rules (see `route_result`):
   * classification with confidence < CONF_THRESHOLD   -> review the label
   * every confirmed risk flag of severity medium/high  -> review the flag
-  * memo whose recommendation is refer/decline, or that
-    coexists with a high-severity flag                 -> credit-officer sign-off
+  * fraud-type detector candidate the agent DISMISSED  -> review the dismissal
+  * memo whose recommendation is refer/decline, or an
+    approve alongside a high flag / dismissed fraud    -> credit-officer sign-off
   * agent run that refused / truncated / hit turn cap  -> review whole statement
 
 CLI:
@@ -18,6 +19,8 @@ import argparse
 import json
 import sqlite3
 from datetime import datetime, timezone
+
+from cashflow_agent.policy import FRAUD_SIGNALS
 
 CONF_THRESHOLD = 0.80
 
@@ -58,28 +61,48 @@ def enqueue(con, statement_id, item_type, ref, payload, reason, priority) -> Non
 
 def route_result(con, result) -> dict:
     """Push everything that needs a human into the queue. Returns counts."""
-    sid, st = result.statement_id, result.state
+    st = result.state
+    rec = {"statement_id": result.statement_id, "status": result.status, "classifications": st.classifications,
+           "flags": st.flags, "memo": st.memo, "candidates": st.candidates or []}
+    return route_record(con, rec, st.statement)
+
+
+def route_record(con, rec: dict, statement: dict) -> dict:
+    """Routing rules applied to a saved run record (also used to rebuild a queue offline)."""
+    sid = rec["statement_id"]
     counts = {"classification": 0, "flag": 0, "memo": 0, "statement": 0}
-    if result.status != "completed":
-        enqueue(con, sid, "statement", None, {"status": result.status}, f"agent run {result.status}", 0)
+    if rec["status"] != "completed":
+        enqueue(con, sid, "statement", None, {"status": rec["status"]}, f"agent run {rec['status']}", 0)
         counts["statement"] += 1
-    txn = {t["txn_id"]: t for t in st.statement["transactions"]}
-    for tid, c in st.classifications.items():
+    txn = {t["txn_id"]: t for t in statement["transactions"]}
+    for tid, c in rec["classifications"].items():
         if c["confidence"] < CONF_THRESHOLD:
             enqueue(con, sid, "classification", tid, {**c, "txn": txn[tid]},
                     f"confidence {c['confidence']:.2f} < {CONF_THRESHOLD}", 3)
             counts["classification"] += 1
     high = False
-    for f in st.flags:
+    for f in rec["flags"]:
         if f["severity"] in ("medium", "high"):
             enqueue(con, sid, "flag", f["signal_type"], f, f"{f['severity']} severity {f['signal_type']}",
                     1 if f["severity"] == "high" else 2)
             counts["flag"] += 1
         high |= f["severity"] == "high"
-    if st.memo and (st.memo["recommendation"] != "approve" or high):
-        reason = "adverse recommendation needs sign-off" if st.memo["recommendation"] != "approve" \
-            else "approve recommended despite high-severity flag"
-        enqueue(con, sid, "memo", st.memo["recommendation"], st.memo, reason, 0 if high else 1)
+    # The agent may dismiss a detector candidate, but never a fraud-type one on its own authority.
+    confirmed = {f["signal_type"] for f in rec["flags"]}
+    dismissed_fraud = [c for c in rec.get("candidates", [])
+                       if c["type"] in FRAUD_SIGNALS and c["type"] not in confirmed]
+    for c in dismissed_fraud:
+        enqueue(con, sid, "flag", c["type"], c, f"fraud candidate {c['type']} dismissed by agent - needs sign-off", 1)
+        counts["flag"] += 1
+    memo = rec.get("memo")
+    if memo and (memo["recommendation"] != "approve" or high or dismissed_fraud):
+        if memo["recommendation"] != "approve":
+            reason = "adverse recommendation needs sign-off"
+        elif high:
+            reason = "approve recommended despite high-severity flag"
+        else:
+            reason = "approve recommended while a fraud candidate was dismissed"
+        enqueue(con, sid, "memo", memo["recommendation"], memo, reason, 0 if (high or dismissed_fraud) else 1)
         counts["memo"] += 1
     con.commit()
     return counts

@@ -38,13 +38,33 @@ def run(statements_dir: Path, out: Path, backend_kind: str, model: str, effort: 
             "turns": res.turns, "tool_errors": res.tool_errors, "seconds": round(time.time() - t0, 2),
             "usage": res.usage, "tool_calls": res.state.tool_calls,
             "classifications": res.state.classifications, "flags": res.state.flags,
-            "features": res.state.features, "memo": res.state.memo, "queued": queued,
+            "features": res.state.features, "memo": res.state.memo, "candidates": res.state.candidates,
+            "queued": queued,
         }
         (out / "results" / f"{res.statement_id}.json").write_text(json.dumps(rec, indent=1, default=str))
         summaries.append(rec)
         memo = (res.state.memo or {}).get("recommendation", "-")
         print(f"{res.statement_id} {res.status:<10} turns={res.turns:<3} memo={memo:<8} queued={queued}")
     return summaries
+
+
+def rebuild_queue(statements_dir: Path, out: Path) -> None:
+    """Re-apply the current routing rules to a saved run, with no LLM calls. Detectors are deterministic,
+    so candidates missing from older result files are recomputed from the agent's saved classifications."""
+    from cashflow_agent import detectors
+
+    db = out / "review_queue.db"
+    db.unlink(missing_ok=True)
+    con = review_queue.connect(str(db))
+    for f in sorted((out / "results").glob("*.json")):
+        rec = json.loads(f.read_text())
+        stmt = json.loads((statements_dir / f"{rec['statement_id']}.json").read_text())
+        if rec.get("candidates") is None:
+            labels = {k: v["category"] for k, v in rec["classifications"].items()}
+            rec["candidates"] = detectors.run_all(stmt, labels)
+        rec["queued"] = review_queue.route_record(con, rec, stmt)
+        f.write_text(json.dumps(rec, indent=1, default=str))
+        print(rec["statement_id"], rec["queued"])
 
 
 def main() -> None:
@@ -55,7 +75,10 @@ def main() -> None:
     ap.add_argument("--model", default="claude-haiku-5-5")
     ap.add_argument("--effort", default="low")
     ap.add_argument("--limit", type=int)
+    ap.add_argument("--rebuild-queue", action="store_true", help="re-route a saved run in --out; no LLM calls")
     a = ap.parse_args()
+    if a.rebuild_queue:
+        return rebuild_queue(Path(a.statements), Path(a.out))
     run(Path(a.statements), Path(a.out), a.backend, a.model, a.effort, a.limit)
 
 

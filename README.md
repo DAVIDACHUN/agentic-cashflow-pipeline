@@ -29,7 +29,8 @@ statement.json --> agent loop (cashflow_agent/agent.py)
                      |
                      v
    review queue (review_queue.py, SQLite)  <-- confidence < 0.80, medium/high flags,
-                                               refer/decline memos, refused or failed runs
+                                               DISMISSED fraud candidates, refer/decline memos,
+                                               refused or failed runs
                      |
                      v
    evals/run_eval.py  -- golden labels, metrics, LLM judge (claude-sonnet-5-5) + negative controls
@@ -62,65 +63,89 @@ stressed / fraud). Each statement carries:
 
 ## Results (measured)
 
-> **Only offline mock mode has been run so far.** No Anthropic credentials were available when this was
-> built, so the live Claude path has **not yet been scored on the golden set**. It is covered by an offline
-> wire test (`tests/test_claude_wire.py`): a local fake Messages API checks request shape, the tool round-trip,
-> refusal handling and judge structured-output parsing through the real `anthropic` SDK. Run the live eval
-> command below to fill in the Claude column.
+Two agents on the same 40 statements:
+- **Mock**: a deterministic scripted agent (`MockBackend`) with keyword rules that **accepts every detector
+  candidate**, scored by the offline **heuristic** judge. Its rules were written against this generator's
+  vocabulary, so its classification numbers are an in-sample upper bound for rules, not a performance claim.
+- **Claude**: `claude-haiku-5-5` at `effort=low` as the agent, scored by a `claude-sonnet-5-5` judge (live API,
+  October 2026, single run).
 
-Mock backend = a deterministic scripted agent (`MockBackend`) with keyword rules that **accepts every detector
-candidate**. Its rules were written against this generator's vocabulary, so its classification numbers are an
-in-sample upper bound for rules and not a performance claim. It is in the repo as a transparent baseline and to
-exercise the full pipeline. The judge here is the offline **heuristic** judge, which applies the same rubric
-through string and number matching.
-
-| Metric | Mock backend (offline) | Claude (`claude-haiku-5-5`) |
+| Metric | Mock (offline rules) | Claude Haiku 5.5 (live) |
 |---|---|---|
-| Classification accuracy | 95.4% | not yet run |
-| Classification macro-F1 | 0.935 | |
-| Routed to human review (confidence < 0.80) | 5.6% | |
-| Accuracy on auto-accepted / on queued items | 100.0% / 18.0% | |
-| Risk-signal precision / recall (statement level) | 88.2% / 100.0% | |
-| Structuring precision (confounder test) | 42.9% (3 TP, 4 FP) | |
-| Recommendation accuracy vs. policy | 90.0% | |
-| Unsafe approvals (policy said refer/decline) | 0 | |
-| Judge pass rate | 45.0% | |
-| Mean turns per statement / tool errors | 10.6 / 0 | |
+| Classification accuracy | 95.4% | 95.6% |
+| Classification macro-F1 | 0.935 | 0.931 |
+| Routed to human review (confidence < 0.80) | 5.6% | 7.4% |
+| Accuracy on auto-accepted / on queued items | 100.0% / 18.0% | 100.0% / 41.1% |
+| Risk-signal precision / recall (statement level) | 88.2% / 100.0% | **100.0% / 93.3%** |
+| Structuring: TP / FP / FN | 3 / 4 / 0 | 1 / 0 / 2 |
+| Recommendation accuracy vs. policy | 90.0% | 90.0% |
+| Unsafe approvals (policy said refer/decline) | 0 | 1 (routed to a human under routing v2, see below) |
+| Judge pass rate | 45.0% (heuristic judge) | 27.5% (Sonnet judge) |
+| Mean turns per statement / tool-call errors | 10.6 / 0 | 6.5 / 0 |
+| Mean latency per statement | - | 33 s |
+| Agent tokens in / out | - | 4.09M / 0.36M |
+| Cost (list price, upper bound: cache reads billed as full input) | $0 | agent $0.59 + judge $1.20 |
+
+Recommendation confusion (golden → predicted):
+- Mock: approve→decline 3, approve→refer 1, all others correct.
+- Claude: approve→refer 1, decline→refer 2, **decline→approve 1**, all others correct.
 
 Feature error caused by misclassification (agent-label features vs. golden-label features):
 
-| Feature | Median abs % error | Max abs % error |
+| Feature | Mock median / max abs % error | Claude median / max abs % error |
 |---|---|---|
-| avg_daily_balance | 0.00% | 0.00% |
-| avg_monthly_revenue | 0.00% | 15.78% |
-| avg_monthly_debt_service | 2.34% | 33.33% |
-| dscr_proxy | 15.60% | 496.43% |
+| avg_daily_balance | 0.00% / 0.00% | 0.00% / 0.00% |
+| avg_monthly_revenue | 0.00% / 15.78% | 0.00% / 15.78% |
+| avg_monthly_debt_service | 2.34% / 33.33% | 0.00% / 148.17% |
+| dscr_proxy | 15.60% / 496.43% | 14.62% / 2,904.76% |
 
 Judge reliability (negative controls: each memo is deliberately corrupted, and the judge must fail it):
 
-| Corruption | Caught by heuristic judge |
-|---|---|
-| wrong recommendation | 100% |
-| average daily balance inflated 40% | 100% |
-| a true risk signal deleted | 100% |
+| Corruption | Heuristic judge on mock memos | Sonnet judge on Claude memos |
+|---|---|---|
+| wrong recommendation | 100% | 100% (40/40) |
+| average daily balance inflated 40% | 100% | 100% (40/40) |
+| a true risk signal deleted | 100% | 89.5% (17/19), see note |
 
 ### What the numbers say
 
-- **Recall-first detectors need a smart filter.** Accepting every candidate (the mock) gets 100% recall but
-  raises 4 structuring false positives. Three of them turn healthy B2B businesses into wrongful `decline`s,
-  which is 3 of the 4 recommendation errors. The fourth landed on a statement already declined for a real
-  fraud signal. Filtering these is the decision the live LLM is there to improve, and the eval isolates it.
+- **The LLM fixed the false positives and overcorrected.** Claude dismissed all 4 structuring false positives
+  on legitimate B2B invoices (precision 42.9% → 100%), but it also dismissed 2 of the 3 *real* structuring
+  patterns, reasoning that a cash-heavy business could plausibly make sub-$10k deposits. Recommendation
+  accuracy is 90% for both agents, but the errors moved in the wrong direction: Claude's include
+  **decline→approve**, the costliest kind of mistake.
+- **The eval found a hole in the human-in-the-loop design.** In the unsafe approval (STMT-020), the agent
+  noticed the four branch cash deposits and wrote "flagged for the human reviewer" in the memo, but it never
+  raised a flag. Prose doesn't trigger routing, so under routing v1 that approve reached **no** human.
+  Routing v2 (`review_queue.route_record`) treats dismissing a fraud-type detector candidate as a decision only a
+  human can make. Every dismissed candidate is queued, and so is any approve memo that coexists with one.
+  Re-routing the saved run (no new LLM calls; `pipeline --rebuild-queue`) puts both dismissed structuring
+  cases and their memos in front of a reviewer, so 0 unsafe approvals now reach no human.
+  `test_dismissed_fraud_candidate_forces_human_review` locks the rule in.
 - **Small classification errors compound in ratio features.** One generic `ELECTRONIC PAYMENT` that is really
-  a monthly loan payment cuts debt service by a third and moves DSCR a long way: the median DSCR error is 15.6%
-  even at 95% transaction accuracy. The remaining recommendation error comes from this: a healthy business's
-  DSCR is computed as 1.02 instead of the true 1.41, below the policy's 1.25 line, so it becomes approve→refer.
-  The same effect drives most of the 45% judge pass rate. It suggests computing coverage features only
-  *after* low-confidence debits have been reviewed.
-- **Test the judge, not just the agent.** The first version of the wrong-recommendation control was itself
-  buggy: corrupting an already-wrong memo could accidentally make it right. A second issue was that a 1.4×
-  balance happened to equal another metric. Both were found and fixed by running the controls. Free-text
-  numbers are still matched against *any* fact value, which is a known limitation of the heuristic judge that
-  the LLM judge does not share.
+  a monthly loan payment moves DSCR a long way: the median DSCR error is about 15% for *both* agents even at
+  about 95.5% transaction accuracy. Both agents turn the same healthy business into approve→refer because its
+  DSCR comes out 1.02 instead of the true 1.41. This also drives most judge failures. It argues for
+  computing coverage features only *after* low-confidence debits have been reviewed.
+- **Confidence is informative for Claude.** Its auto-accepted labels (≥ 0.80) were 100.0% correct, while
+  the 7.4% it routed to review were right only 41% of the time. With reviewers fixing the queue, the effective
+  accuracy is 100%.
+- **Test the judge, not just the agent.** Each problem below was found by running the eval, then fixed:
+  - **Pilot run (3 statements):** the Sonnet judge passed 0/3. It had been given only the computed features,
+    so it marked true details (transaction counts, closing balance, the policy threshold) as unsupported. It now
+    sees the statement overview and the policy, and its rubric excludes counterparty-level detail it cannot verify.
+  - **Wrong-recommendation control:** corrupting an already-wrong memo could accidentally make it right. Fixed by
+    choosing a recommendation that differs from both the memo and the truth.
+  - **Inflated-metric control:** a 1.4× balance happened to equal another metric. Fixed by checking structured
+    citations against the same-named fact.
+  - **Dropped-risk control:** deleting keywords leaked through paraphrase. It now deletes whole sentences using
+    a synonym list. The 2 corrupted memos the Sonnet judge still passed were checked by hand: both still describe
+    the risk in other words ("an unexplained +$12,833.65 offset"; "authenticity must be verified"), so the judge
+    was right. Removing a risk from free text with rules has limits, and an LLM rewriter would make a stronger
+    control.
+- **The judge pass bar is strict on purpose.** A memo fails if any figure is more than 2% from ground truth,
+  so a single misclassified transfer can sink it. The judge was not tuned toward passing; that would make the
+  eval meaningless.
 
 ## How to run
 
@@ -130,7 +155,7 @@ pip install -r requirements.txt
 
 python -m cashflow_agent.synth                    # 40 synthetic statements + golden labels -> data/golden/
 python -m evals.run_eval --backend mock --judge heuristic        # fully offline
-pytest -q                                         # 13 tests incl. offline SDK wire tests
+pytest -q                                         # 14 tests incl. offline SDK wire tests
 
 # human review queue
 python -m cashflow_agent.review_queue --db runs/mock/review_queue.db stats
@@ -138,8 +163,10 @@ python -m cashflow_agent.review_queue --db runs/mock/review_queue.db list --limi
 python -m cashflow_agent.review_queue --db runs/mock/review_queue.db resolve 7 --decision corrected \
     --reviewer da --correction '{"category": "loan_repayment"}'
 
-# live (needs ANTHROPIC_API_KEY or an `ant auth login` profile)
+# live (needs ANTHROPIC_API_KEY or an `ant auth login` profile); about $1.80 for the 40-statement run above
+python -m evals.run_eval --backend claude --model claude-haiku-5-5 --judge claude --name haiku --limit 3   # pilot first
 python -m evals.run_eval --backend claude --model claude-haiku-5-5 --judge claude --name haiku
+python -m cashflow_agent.pipeline --out runs/haiku --rebuild-queue   # re-apply routing rules, no LLM calls
 python -m evals.run_eval --backend claude --model claude-sonnet-5-5 --effort medium --judge claude --name sonnet
 ```
 

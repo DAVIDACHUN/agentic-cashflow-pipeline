@@ -126,6 +126,408 @@
       "wrong_recommendation": 1,
       "inflated_metric": 1,
       "dropped_risk": 1
+    },
+    "verdicts": {
+      "STMT-001": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-002": {
+        "grounded": 3,
+        "risk_coverage": 5,
+        "recommendation_consistent": false,
+        "unsupported_claims": [
+          "1.02"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-003": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-004": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-005": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-006": {
+        "grounded": 3,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "4.41"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-007": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-008": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-009": {
+        "grounded": 3,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "-0.11"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-010": {
+        "grounded": 3,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "4.79"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-011": {
+        "grounded": 3,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "0.4"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-012": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-013": {
+        "grounded": 3,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "-0.05"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-014": {
+        "grounded": 3,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "-0.29"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-015": {
+        "grounded": 3,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "-0.13"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-016": {
+        "grounded": 3,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "-1.06"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-017": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-018": {
+        "grounded": 3,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "5.49"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-019": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-020": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-021": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": false,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-022": {
+        "grounded": 3,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "3.41"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-023": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": false,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-024": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-025": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-026": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": false,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-027": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-028": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-029": {
+        "grounded": 3,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "-2.6"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-030": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-031": {
+        "grounded": 3,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "0.63"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-032": {
+        "grounded": 3,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "3.27"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-033": {
+        "grounded": 1,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "0.31",
+          "100970.11"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-034": {
+        "grounded": 1,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "1.54",
+          "100554.5"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-035": {
+        "grounded": 3,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "0.15"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-036": {
+        "grounded": 3,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "0.28"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-037": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-038": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-039": {
+        "grounded": 5,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [],
+        "missing_risks": [],
+        "passed": true,
+        "rationale": "heuristic rubric check"
+      },
+      "STMT-040": {
+        "grounded": 3,
+        "risk_coverage": 5,
+        "recommendation_consistent": true,
+        "unsupported_claims": [
+          "5.86"
+        ],
+        "missing_risks": [],
+        "passed": false,
+        "rationale": "heuristic rubric check"
+      }
     }
   },
   "ops": {

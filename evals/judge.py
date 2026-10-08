@@ -20,12 +20,12 @@ import re
 from pydantic import BaseModel
 
 SIGNAL_WORDS = {
-    "duplicate_deposit": ["duplicate"],
-    "balance_tampering": ["tamper", "balance discontinu", "doctored", "altered"],
-    "structuring": ["structur"],
-    "pass_through_funds": ["pass-through", "pass through", "pass_through"],
-    "nsf_cluster": ["nsf"],
-    "mca_stacking": ["mca", "merchant cash advance", "stacking"],
+    "duplicate_deposit": ["duplicate", "double-post", "posted twice", "identical credit"],
+    "balance_tampering": ["tamper", "discontinu", "doctored", "altered", "reconcil", "running balance"],
+    "structuring": ["structur", "cash deposit", "just under", "sub-$10", "$10,000", "10k"],
+    "pass_through_funds": ["pass-through", "pass through", "pass_through", "wire in", "round-trip", "in-and-out"],
+    "nsf_cluster": ["nsf", "overdraft", "returned item", "insufficient"],
+    "mca_stacking": ["mca", "merchant cash advance", "cash advance", "stacking", "funding", "daily debit"],
 }
 
 
@@ -42,18 +42,25 @@ class JudgeVerdict(BaseModel):
 JUDGE_SYSTEM = """You are a strict reviewer of small-business underwriting memos. You are given \
 GROUND-TRUTH FACTS and a MEMO written by an automated agent. Grade the memo only against the facts.
 
-- grounded (1-5): 5 = every number in the memo matches a fact value within 2% relative; subtract \
-for each number that does not match or is not in the facts. Rounding/formatting differences are fine.
+- grounded (1-5): 5 = every metric value, balance, count and policy threshold in the memo matches the \
+facts within 2% relative. Values within 2% are SUPPORTED: do not list them. Subtract for each number \
+that is outside tolerance or contradicts the facts. Descriptive details about individual transactions or \
+counterparties (names, transaction ids, typical payment sizes) cannot be checked against these facts: \
+ignore them unless they contradict a fact. Rounding/formatting differences are fine.
 - risk_coverage (1-5): 5 = every ground-truth risk signal is clearly mentioned; 1 = none are. \
 If there are no ground-truth signals, score 5 unless the memo invents serious risks.
 - recommendation_consistent: true only if the memo's recommendation equals the policy recommendation.
-- unsupported_claims: numbers or claims not supported by the facts.
+- unsupported_claims: numbers outside tolerance, or claims that contradict the facts (including risk \
+signals asserted as present when the facts show none).
 - missing_risks: ground-truth signal types the memo fails to mention.
 - passed: true only if grounded >= 4 AND risk_coverage == 5 AND recommendation_consistent."""
 
 
 def facts_for(golden: dict) -> dict:
-    return {"features": golden["features"],
+    from cashflow_agent.policy import POLICY_TEXT
+
+    return {"statement_overview": golden.get("overview", {}), "credit_policy": POLICY_TEXT,
+            "features": golden["features"],
             "risk_signals": sorted({s["type"] for s in golden["signals"]}),
             "policy_recommendation": golden["recommendation"]}
 
@@ -71,6 +78,7 @@ class ClaudeJudge:
         self.client = client or anthropic.Anthropic()
         self.model, self.effort = model, effort
         self.name = f"claude:{model}"
+        self.usage = {"input_tokens": 0, "output_tokens": 0, "calls": 0}
 
     def judge(self, memo: dict, golden: dict) -> JudgeVerdict | None:
         resp = self.client.beta.messages.parse(
@@ -85,6 +93,10 @@ class ClaudeJudge:
             messages=[{"role": "user", "content":
                        f"GROUND-TRUTH FACTS:\n{json.dumps(facts_for(golden), indent=1)}\n\nMEMO:\n{memo_text(memo)}"}],
         )
+        self.usage["calls"] += 1
+        self.usage["input_tokens"] += resp.usage.input_tokens + (resp.usage.cache_read_input_tokens or 0) \
+            + (resp.usage.cache_creation_input_tokens or 0)
+        self.usage["output_tokens"] += resp.usage.output_tokens
         if resp.stop_reason == "refusal":
             return None
         return resp.parsed_output
@@ -156,9 +168,10 @@ def corrupt(memo: dict, golden: dict) -> dict[str, dict]:
     if sigs:
         drop = sigs[0]
         m = copy.deepcopy(memo)
-        m["key_risks"] = [r for r in m.get("key_risks", [])
-                          if drop not in r.lower() and not any(w in r.lower() for w in SIGNAL_WORDS[drop])]
-        for w in [drop] + SIGNAL_WORDS[drop]:
-            m["summary"] = re.sub(re.escape(w), "", m["summary"], flags=re.I)
+        words = [drop, drop.replace("_", " ")] + SIGNAL_WORDS[drop]
+        hit = lambda t: any(w in t.lower() for w in words)  # noqa: E731
+        m["key_risks"] = [r for r in m.get("key_risks", []) if not hit(r)]
+        # drop every sentence that mentions the risk (keyword deletion leaks through paraphrase)
+        m["summary"] = " ".join(x for x in re.split(r"(?<=[.!?])\s+", m["summary"]) if not hit(x))
         out["dropped_risk"] = m
     return out
